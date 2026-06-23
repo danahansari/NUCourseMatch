@@ -5,6 +5,15 @@ import re
 import os
 import torch
 import numpy as np
+import re
+
+STOPWORDS = {"of", "and", "the", "to", "in", "for", "with", "an", "a", "intro", "introduction"}
+
+def extract_keywords(title):
+    # Strip "COMP_SCI 352:" style prefixes, then split into words
+    cleaned = re.sub(r'^[A-Z_]+\s*\d+[,\d]*:?\s*', '', title)
+    words = re.findall(r'[a-zA-Z]+', cleaned.lower())
+    return [w for w in words if w not in STOPWORDS and len(w) > 2]
 
 st.set_page_config(page_title="NU CourseMatch", page_icon="💜", layout="wide")
 
@@ -112,8 +121,16 @@ if st.button("Generate Recommendations"):
     results['similarity'] = cosine_scores.tolist()
 
     if keyword_search:
-        keyword_mask = (results['title'].str.contains(keyword_search, case=False, na=False) |
-                        results['summary'].str.contains(keyword_search, case=False, na=False))
+        boost_keywords = [keyword_search]
+    elif selected_course_title != "None":
+        boost_keywords = extract_keywords(selected_course_title)
+    else:
+        boost_keywords = []
+
+    if boost_keywords:
+        pattern = '|'.join(re.escape(k) for k in boost_keywords)
+        keyword_mask = (results['title'].str.contains(pattern, case=False, na=False, regex=True) |
+                        results['summary'].str.contains(pattern, case=False, na=False, regex=True))
         results.loc[keyword_mask, 'similarity'] += 0.15
     
     # Filter logic
