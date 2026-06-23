@@ -48,7 +48,7 @@ def load_data():
         return int(match.group()) if match else 999
     
     df['course_num'] = df['title'].apply(get_num)
-    df = df.sort_values('course_num') # Sort once here
+    df = df.sort_values('course_num').reset_index(drop=True)
     
     cols_to_fix = ['prerequisites', 'days (spring 26)', 'times (spring 26)', 
                    'location (spring 26)', 'professor (spring 26)', 'languages']
@@ -138,7 +138,8 @@ if st.button("Generate Recommendations"):
                     st.caption(f"**Prereqs:** {row['prerequisites']}")
                     st.write(row['summary'])
                     st.write(f"[View Official Course Page]({row['url']})")
-                    st.progress(row['similarity'], text=f"Similarity Score: {round(row['similarity'] * 100)}%")
+                    val = min(max(row['similarity'], 0.0), 1.0)
+                    st.progress(val, text=f"Similarity Score: {round(val * 100)}%")
                 with c2:
                     if row['is_spring_26'] == 1:
                         # Spring info re-added here
