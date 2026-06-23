@@ -2,6 +2,9 @@ import streamlit as st
 import pandas as pd
 from sentence_transformers import SentenceTransformer, util
 import re
+import os
+import torch
+import numpy as np
 
 st.set_page_config(page_title="NU CourseMatch", page_icon="💜", layout="wide")
 
@@ -58,9 +61,12 @@ model = get_model()
 
 @st.cache_resource
 def get_embeddings(_df):
-    # Combine Title and Description to make the search more robust
-    combined_text = (_df['title'] + " " + _df['description']).tolist()
-    return model.encode(combined_text, convert_to_tensor=True)
+    if os.path.exists("embeddings.npy"):
+        embeddings = np.load("embeddings.npy")
+        return torch.tensor(embeddings)
+    else:
+        combined_text = (_df['title'] + " " + _df['description']).tolist()
+        return model.encode(combined_text, convert_to_tensor=True)
 
 embeddings = get_embeddings(df)
 
@@ -125,11 +131,10 @@ if st.button("Generate Recommendations"):
                 c1, c2 = st.columns([2, 1])
                 with c1:
                     st.subheader(row['title'])
-                    st.caption(f"**Similarity Score:** {round(row['similarity'] * 100)}% | **Prereqs:** {row['prerequisites']}")
-                    st.write(row['description'][:250] + "...")
-                    with st.expander("Read Full Description"):
-                        st.write(row['description'])
-                        st.write(f"[View Official Course Page]({row['url']})")
+                    st.caption(f"**Prereqs:** {row['prerequisites']}")
+                    st.write(row['summary'])
+                    st.write(f"[View Official Course Page]({row['url']})")
+                    st.progress(row['similarity'], text=f"Similarity Score: {round(row['similarity'] * 100)}%")
                 with c2:
                     if row['is_spring_26'] == 1:
                         # Spring info re-added here

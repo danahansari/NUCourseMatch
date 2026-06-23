@@ -1,16 +1,6 @@
 import pandas as pd
+import numpy as np
 from sentence_transformers import SentenceTransformer, util
-
-# Load data
-df = pd.read_csv("cs_courses_updated.csv")
-
-# Initialize the NLP model
-print("Loading NLP model...")
-model = SentenceTransformer('all-MiniLM-L6-v2')
-
-# Create embeddings
-print("Vectorizing course descriptions...")
-embeddings = model.encode(df['description'].tolist(), convert_to_tensor=True)
 
 def recommend_course(liked_title_keywords, top_n=5, only_spring=False, language=None):
     # Find the course the user liked
