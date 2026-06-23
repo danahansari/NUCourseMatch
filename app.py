@@ -35,7 +35,7 @@ st.markdown("""
 
 @st.cache_resource
 def get_model():
-    return SentenceTransformer('all-MiniLM-L6-v2')
+    return SentenceTransformer('multi-qa-MiniLM-L6-cos-v1', device='cpu')
 
 @st.cache_data
 def load_data():
@@ -63,10 +63,9 @@ model = get_model()
 def get_embeddings(_df):
     if os.path.exists("embeddings.npy"):
         embeddings = np.load("embeddings.npy")
-        return torch.tensor(embeddings)
+        return torch.tensor(embeddings, device='cpu')
     else:
-        combined_text = (_df['title'] + " " + _df['description']).tolist()
-        return model.encode(combined_text, convert_to_tensor=True)
+        return model.encode((_df['description']).tolist(), convert_to_tensor=True, device='cpu')
 
 embeddings = get_embeddings(df)
 
@@ -98,7 +97,7 @@ if st.button("Generate Recommendations"):
     source_name = ""
 
     if keyword_search:
-        query_embedding = model.encode(keyword_search, convert_to_tensor=True)
+        query_embedding = model.encode(keyword_search, convert_to_tensor=True, device='cpu')
         source_name = f"'{keyword_search}'"
     elif selected_course_title != "None":
         idx = df[df['title'] == selected_course_title].index[0]
@@ -111,6 +110,11 @@ if st.button("Generate Recommendations"):
     cosine_scores = util.cos_sim(query_embedding, embeddings)[0]
     results = df.copy()
     results['similarity'] = cosine_scores.tolist()
+
+    if keyword_search:
+        keyword_mask = (results['title'].str.contains(keyword_search, case=False, na=False) |
+                        results['summary'].str.contains(keyword_search, case=False, na=False))
+        results.loc[keyword_mask, 'similarity'] += 0.15
     
     # Filter logic
     if only_spring:

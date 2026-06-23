@@ -3,10 +3,9 @@ import pandas as pd
 from sentence_transformers import SentenceTransformer
 
 df = pd.read_csv("cs_courses_updated.csv")
-model = SentenceTransformer('all-MiniLM-L6-v2')
+model = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
 
-combined_text = (df['title'] + " " + df['description']).tolist()
-embeddings = model.encode(combined_text, convert_to_tensor=False)
+embeddings = model.encode((df['description']).tolist(), convert_to_tensor=False, device='cpu')
 
 np.save("embeddings.npy", embeddings)
 print("Saved!")
